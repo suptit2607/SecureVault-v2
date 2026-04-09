@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.alish.securevault"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.alish.securevault"
         minSdk = 28
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -58,7 +58,7 @@ android {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2026.02.01")
+    val composeBom = platform("androidx.compose:compose-bom:2024.11.00")
 
     implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
