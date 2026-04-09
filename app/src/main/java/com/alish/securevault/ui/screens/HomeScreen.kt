@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.alish.securevault.model.RecentVaultItem
 import com.alish.securevault.model.VaultStat
+import com.alish.securevault.model.icon
 import com.alish.securevault.ui.SecureVaultUiState
 
 @Composable

@@ -39,7 +39,7 @@ class MainActivity : FragmentActivity() {
             .build()
 
         val prompt = BiometricPrompt(
-            this,
+            this@MainActivity,
             biometricExecutor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {

@@ -66,6 +66,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
     implementation("androidx.biometric:biometric:1.1.0")
 
     implementation(composeBom)
