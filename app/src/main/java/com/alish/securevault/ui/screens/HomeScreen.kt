@@ -130,30 +130,73 @@ private fun VaultHealthCard(uiState: SecureVaultUiState) {
             .padding(horizontal = 20.dp)
             .fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Sapphire800)
+        colors = CardDefaults.cardColors(containerColor = Sapphire800),
+        border = androidx.compose.foundation.BorderStroke(1.dp, NeonCyan.copy(alpha = 0.2f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Shield, contentDescription = null, tint = NeonCyan)
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Vault Status: Secure", fontWeight = FontWeight.Bold, color = Color.White)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(NeonCyan.copy(alpha = 0.1f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Shield, contentDescription = null, tint = NeonCyan, modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Vault Security: Optimal", fontWeight = FontWeight.ExtraBold, color = Color.White)
+                }
+                Text("98%", color = NeonCyan, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            LinearProgressIndicator(
-                progress = { 0.35f }, // Mock storage usage
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(CircleShape),
-                color = NeonCyan,
-                trackColor = Sapphire700
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "3.2 GB of 10 GB Encrypted Storage used",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.5f)
-            )
+            
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            Box(modifier = Modifier.fillMaxWidth()) {
+                LinearProgressIndicator(
+                    progress = { 0.35f },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .clip(CircleShape),
+                    color = NeonCyan,
+                    trackColor = Sapphire700
+                )
+                // Subtle scan lines overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Color.Transparent, Color.White.copy(alpha = 0.05f), Color.Transparent)
+                            )
+                        )
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "3.2 GB / 10 GB Encrypted",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.6f)
+                )
+                Text(
+                    text = "AES-256 GCM",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = NeonCyan.copy(alpha = 0.8f),
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
