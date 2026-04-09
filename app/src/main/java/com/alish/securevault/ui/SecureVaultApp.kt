@@ -15,12 +15,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.alish.securevault.ui.screens.LockScreen
+import com.alish.securevault.ui.theme.NeonCyan
+import com.alish.securevault.ui.theme.Sapphire700
+import com.alish.securevault.ui.theme.Sapphire800
 
 @Composable
 fun SecureVaultApp(
@@ -51,10 +57,12 @@ fun SecureVaultApp(
             }
 
             Scaffold(
+                containerColor = Color.Transparent, // Use background from Surface
                 bottomBar = {
                     NavigationBar(
                         modifier = Modifier.navigationBarsPadding(),
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
+                        containerColor = Sapphire800.copy(alpha = 0.96f),
+                        tonalElevation = 8.dp
                     ) {
                         val items = listOf(
                             NavigationItem(Screen.Home.route, "Home", Icons.Default.PhotoLibrary),
@@ -64,8 +72,9 @@ fun SecureVaultApp(
                         )
                         
                         items.forEach { item ->
+                            val isSelected = currentDestination?.hierarchy?.any { it.route == item.route } == true
                             NavigationBarItem(
-                                selected = currentDestination?.hierarchy?.any { it.route == item.route } == true,
+                                selected = isSelected,
                                 onClick = {
                                     navController.navigate(item.route) {
                                         popUpTo(navController.graph.findStartDestination().id) {
@@ -75,8 +84,23 @@ fun SecureVaultApp(
                                         restoreState = true
                                     }
                                 },
-                                icon = { Icon(item.icon, contentDescription = item.label) },
-                                label = { Text(item.label) }
+                                icon = { 
+                                    Icon(
+                                        item.icon, 
+                                        contentDescription = item.label,
+                                        tint = if (isSelected) NeonCyan else Color.White.copy(alpha = 0.5f)
+                                    ) 
+                                },
+                                label = { 
+                                    Text(
+                                        item.label, 
+                                        color = if (isSelected) NeonCyan else Color.White.copy(alpha = 0.5f),
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    ) 
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    indicatorColor = Sapphire700
+                                )
                             )
                         }
                     }
