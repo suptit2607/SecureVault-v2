@@ -13,9 +13,10 @@ import com.alish.securevault.model.VaultItem
 import com.alish.securevault.model.VaultStat
 import com.alish.securevault.security.CryptoManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 import java.time.Instant
 import java.time.ZoneId
@@ -25,12 +26,13 @@ import java.util.UUID
 
 class VaultRepository(
     private val context: Context,
+    private val vaultDao: VaultDao,
     private val cryptoManager: CryptoManager
 ) {
     private val vaultRoot = File(context.filesDir, "secure_vault").apply { mkdirs() }
     private val encryptedRoot = File(vaultRoot, "content").apply { mkdirs() }
     private val cacheRoot = File(context.cacheDir, "secure_vault/open").apply { mkdirs() }
-    private val metadataFile = File(vaultRoot, "vault_items.json")
+    
     private val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a", Locale.getDefault())
     private val statAccents = mapOf(
         VaultCategory.Photos to Color(0xFF4D7CFE),
@@ -47,42 +49,57 @@ class VaultRepository(
         VaultCategory.Passwords to "Critical access"
     )
 
-    suspend fun getVaultItems(): List<VaultItem> = withContext(Dispatchers.IO) {
-        readItems()
+    fun getItemsFlow(): Flow<List<VaultItem>> = vaultDao.getAllItems().map { entities ->
+        entities.map { entity ->
+            VaultItem(
+                id = entity.id,
+                displayName = entity.displayName,
+                category = VaultCategory.valueOf(entity.category),
+                mimeType = entity.mimeType,
+                sizeBytes = entity.sizeBytes,
+                encryptedFileName = entity.encryptedFileName,
+                importedAt = entity.importedAt
+            )
+        }
     }
 
-    suspend fun importFromUris(uris: List<Uri>): List<VaultItem> = withContext(Dispatchers.IO) {
-        if (uris.isEmpty()) return@withContext readItems()
-
-        val currentItems = readItems().toMutableList()
-        val importedItems = uris.mapNotNull { uri ->
-            val descriptor = resolveDescriptor(uri) ?: return@mapNotNull null
+    suspend fun importFromUris(uris: List<Uri>) = withContext(Dispatchers.IO) {
+        uris.forEach { uri ->
+            val descriptor = resolveDescriptor(uri) ?: return@forEach
             val itemId = UUID.randomUUID().toString()
             val encryptedFileName = "$itemId.vault"
             val encryptedFile = File(encryptedRoot, encryptedFileName)
 
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 cryptoManager.encryptToFile(inputStream, encryptedFile)
-            } ?: return@mapNotNull null
+            } ?: return@forEach
 
-            VaultItem(
+            val entity = VaultItemEntity(
                 id = itemId,
                 displayName = descriptor.displayName,
-                category = descriptor.category,
+                category = descriptor.category.name,
                 mimeType = descriptor.mimeType,
                 sizeBytes = descriptor.sizeBytes,
                 encryptedFileName = encryptedFileName,
                 importedAt = formatter.format(Instant.now().atZone(ZoneId.systemDefault()))
             )
+            vaultDao.insertItem(entity)
         }
+    }
 
-        currentItems.addAll(0, importedItems)
-        writeItems(currentItems)
-        currentItems
+    suspend fun deleteItem(id: String) = withContext(Dispatchers.IO) {
+        val items = vaultDao.getAllItems().first()
+        val item = items.find { it.id == id } ?: return@withContext
+        val encryptedFile = File(encryptedRoot, item.encryptedFileName)
+        if (encryptedFile.exists()) {
+            encryptedFile.delete()
+        }
+        vaultDao.deleteItem(id)
     }
 
     suspend fun prepareOpenAsset(itemId: String): OpenVaultAsset? = withContext(Dispatchers.IO) {
-        val item = readItems().firstOrNull { it.id == itemId } ?: return@withContext null
+        val items = vaultDao.getAllItems().first()
+        val item = items.firstOrNull { it.id == itemId } ?: return@withContext null
         val encryptedFile = File(encryptedRoot, item.encryptedFileName)
         if (!encryptedFile.exists()) return@withContext null
 
@@ -103,12 +120,13 @@ class VaultRepository(
     }
 
     suspend fun vaultStats(passwordCount: Int): List<VaultStat> = withContext(Dispatchers.IO) {
-        val itemCounts = readItems().groupingBy { it.category }.eachCount()
+        val items = vaultDao.getAllItems().first()
+        val itemCounts = items.groupingBy { it.category }.eachCount()
         VaultCategory.entries.map { category ->
             val count = if (category == VaultCategory.Passwords) {
                 passwordCount
             } else {
-                itemCounts[category] ?: 0
+                itemCounts[category.name] ?: 0
             }
             VaultStat(
                 category = category,
@@ -120,11 +138,12 @@ class VaultRepository(
     }
 
     suspend fun recentItems(passwordCount: Int): List<RecentVaultItem> = withContext(Dispatchers.IO) {
-        val importedItems = readItems().take(5).map {
+        val items = vaultDao.getAllItems().first()
+        val importedItems = items.take(5).map {
             RecentVaultItem(
                 id = it.id,
                 title = it.displayName,
-                category = it.category,
+                category = VaultCategory.valueOf(it.category),
                 meta = "${formatSize(it.sizeBytes)} - ${it.importedAt}"
             )
         }.toMutableList()
@@ -186,47 +205,6 @@ class VaultRepository(
         mimeType.startsWith("video/") -> VaultCategory.Videos
         mimeType.startsWith("audio/") -> VaultCategory.Audio
         else -> VaultCategory.Files
-    }
-
-    private fun readItems(): List<VaultItem> {
-        if (!metadataFile.exists()) return emptyList()
-        val payload = metadataFile.readText()
-        if (payload.isBlank()) return emptyList()
-
-        val array = JSONArray(payload)
-        return buildList {
-            for (index in 0 until array.length()) {
-                val item = array.getJSONObject(index)
-                add(
-                    VaultItem(
-                        id = item.getString("id"),
-                        displayName = item.getString("displayName"),
-                        category = VaultCategory.valueOf(item.getString("category")),
-                        mimeType = item.getString("mimeType"),
-                        sizeBytes = item.getLong("sizeBytes"),
-                        encryptedFileName = item.getString("encryptedFileName"),
-                        importedAt = item.getString("importedAt")
-                    )
-                )
-            }
-        }
-    }
-
-    private fun writeItems(items: List<VaultItem>) {
-        val array = JSONArray()
-        items.forEach { item ->
-            array.put(
-                JSONObject()
-                    .put("id", item.id)
-                    .put("displayName", item.displayName)
-                    .put("category", item.category.name)
-                    .put("mimeType", item.mimeType)
-                    .put("sizeBytes", item.sizeBytes)
-                    .put("encryptedFileName", item.encryptedFileName)
-                    .put("importedAt", item.importedAt)
-            )
-        }
-        metadataFile.writeText(array.toString())
     }
 
     private fun sanitizeFileName(name: String): String {

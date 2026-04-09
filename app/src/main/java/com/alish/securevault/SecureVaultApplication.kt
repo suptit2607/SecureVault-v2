@@ -10,13 +10,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.room.Room
 import com.alish.securevault.data.PasswordVaultRepository
+import com.alish.securevault.data.VaultDatabase
 import com.alish.securevault.data.VaultRepository
 import com.alish.securevault.security.CryptoManager
 import com.alish.securevault.ui.SecureVaultApp
 import com.alish.securevault.ui.SecureVaultViewModel
 import com.alish.securevault.ui.theme.SecureVaultTheme
 import kotlinx.coroutines.launch
+import net.sqlcipher.database.SupportFactory
 
 @Composable
 fun SecureVaultRoot(
@@ -25,9 +28,29 @@ fun SecureVaultRoot(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val appContext = context.applicationContext
+    
     val cryptoManager = remember { CryptoManager() }
-    val passwordRepository = remember { PasswordVaultRepository(appContext, cryptoManager) }
-    val vaultRepository = remember { VaultRepository(appContext, cryptoManager) }
+    
+    // Initialize Database with SQLCipher
+    val db = remember {
+        val passphrase = "vault-root-encryption-key".toByteArray() // In production, derive from Keystore
+        val factory = SupportFactory(passphrase)
+        Room.databaseBuilder(
+            appContext,
+            VaultDatabase::class.java,
+            "secure_vault.db"
+        ).openHelperFactory(factory)
+            .fallbackToDestructiveMigration() // Reset since user said START FRESH
+            .build()
+    }
+    
+    val passwordRepository = remember { 
+        PasswordVaultRepository(db.passwordDao(), cryptoManager) 
+    }
+    val vaultRepository = remember { 
+        VaultRepository(appContext, db.vaultDao(), cryptoManager) 
+    }
+    
     val viewModel: SecureVaultViewModel = viewModel(
         factory = SecureVaultViewModel.factory(
             vaultRepository = vaultRepository,

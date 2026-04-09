@@ -15,6 +15,9 @@ import com.alish.securevault.model.VaultStat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -43,7 +46,27 @@ class SecureVaultViewModel(
     val uiState: StateFlow<SecureVaultUiState> = _uiState.asStateFlow()
 
     init {
-        refresh()
+        observeData()
+    }
+
+    private fun observeData() {
+        combine(
+            vaultRepository.getItemsFlow(),
+            passwordVaultRepository.getEntriesFlow()
+        ) { vaultItems, passwordEntries ->
+            val stats = vaultRepository.vaultStats(passwordEntries.size)
+            val recents = vaultRepository.recentItems(passwordEntries.size)
+            
+            _uiState.update {
+                it.copy(
+                    vaultItems = vaultItems,
+                    passwordEntries = passwordEntries,
+                    vaultStats = stats,
+                    recentItems = recents,
+                    isLoading = false
+                )
+            }
+        }.launchIn(viewModelScope)
     }
 
     fun unlock() {
@@ -62,20 +85,26 @@ class SecureVaultViewModel(
 
         viewModelScope.launch {
             runCatching {
-                val entries = passwordVaultRepository.addEntry(label, username, secret)
-                val vaultItems = _uiState.value.vaultItems
+                passwordVaultRepository.addEntry(label, username, secret)
                 _uiState.update {
                     it.copy(
-                        passwordEntries = entries,
                         revealedEntryId = null,
                         statusMessage = "Password saved securely."
                     )
                 }
-                refreshStatsAndRecents(vaultItems = vaultItems, passwordEntries = entries)
             }.onFailure {
                 _uiState.update { state ->
                     state.copy(statusMessage = "Could not save the password entry.")
                 }
+            }
+        }
+    }
+
+    fun deletePassword(id: String) {
+        viewModelScope.launch {
+            runCatching {
+                passwordVaultRepository.deletePassword(id)
+                _uiState.update { it.copy(statusMessage = "Password entry deleted.") }
             }
         }
     }
@@ -85,15 +114,13 @@ class SecureVaultViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isImporting = true, statusMessage = "Encrypting ${uris.size} item(s)...") }
             runCatching {
-                val vaultItems = vaultRepository.importFromUris(uris)
+                vaultRepository.importFromUris(uris)
                 _uiState.update {
                     it.copy(
-                        vaultItems = vaultItems,
                         isImporting = false,
                         statusMessage = "Import complete."
                     )
                 }
-                refreshStatsAndRecents(vaultItems = vaultItems, passwordEntries = _uiState.value.passwordEntries)
             }.onFailure {
                 _uiState.update { state ->
                     state.copy(
@@ -101,6 +128,15 @@ class SecureVaultViewModel(
                         statusMessage = "Import failed. Please try again."
                     )
                 }
+            }
+        }
+    }
+
+    fun deleteItem(id: String) {
+        viewModelScope.launch {
+            runCatching {
+                vaultRepository.deleteItem(id)
+                _uiState.update { it.copy(statusMessage = "Vault item deleted.") }
             }
         }
     }
@@ -121,47 +157,6 @@ class SecureVaultViewModel(
 
     suspend fun prepareOpenAsset(itemId: String): OpenVaultAsset? {
         return vaultRepository.prepareOpenAsset(itemId)
-    }
-
-    private fun refresh() {
-        viewModelScope.launch {
-            runCatching {
-                val vaultItems = vaultRepository.getVaultItems()
-                val passwordEntries = passwordVaultRepository.getEntries()
-                _uiState.update {
-                    it.copy(
-                        vaultItems = vaultItems,
-                        passwordEntries = passwordEntries,
-                        isLoading = false
-                    )
-                }
-                refreshStatsAndRecents(vaultItems = vaultItems, passwordEntries = passwordEntries)
-            }.onFailure {
-                _uiState.update { state ->
-                    state.copy(
-                        isLoading = false,
-                        statusMessage = "Could not load existing vault data."
-                    )
-                }
-            }
-        }
-    }
-
-    private suspend fun refreshStatsAndRecents(
-        vaultItems: List<VaultItem>,
-        passwordEntries: List<PasswordEntry>
-    ) {
-        val passwordCount = passwordEntries.size
-        val stats = vaultRepository.vaultStats(passwordCount)
-        val recents = vaultRepository.recentItems(passwordCount)
-        _uiState.update {
-            it.copy(
-                vaultStats = stats,
-                recentItems = recents,
-                vaultItems = vaultItems,
-                passwordEntries = passwordEntries
-            )
-        }
     }
 
     companion object {

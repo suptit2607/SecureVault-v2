@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -83,5 +84,16 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    implementation("androidx.compose.ui:ui-test-junit4")
+
+    // Persistence: Room + SQLCipher
+    val roomVersion = "2.7.0-alpha01" // Note: using a version that supports SQLCipher well
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
+    implementation("net.zetetic:android-database-sqlcipher:4.5.4@aar")
+    implementation("androidx.sqlite:sqlite-ktx:2.4.0")
+    
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.7.7")
 }
