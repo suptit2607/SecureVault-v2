@@ -14,15 +14,15 @@ enum class VaultCategory {
     Videos,
     Files,
     Audio,
-    Passwords
-}
+    Passwords;
 
-fun VaultCategory.icon(): ImageVector = when (this) {
-    VaultCategory.Photos -> Icons.Default.PhotoCamera
-    VaultCategory.Videos -> Icons.Default.VideoLibrary
-    VaultCategory.Files -> Icons.Default.Description
-    VaultCategory.Audio -> Icons.Default.AudioFile
-    VaultCategory.Passwords -> Icons.Default.Lock
+    fun icon(): ImageVector = when (this) {
+        Photos -> Icons.Default.PhotoCamera
+        Videos -> Icons.Default.VideoLibrary
+        Files -> Icons.Default.Description
+        Audio -> Icons.Default.AudioFile
+        Passwords -> Icons.Default.Lock
+    }
 }
 
 data class VaultItem(
