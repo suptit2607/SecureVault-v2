@@ -1,13 +1,13 @@
 package com.alish.securevault
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     private val biometricExecutor by lazy { ContextCompat.getMainExecutor(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -1,6 +1,13 @@
 package com.alish.securevault.model
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class VaultCategory {
     Photos,
@@ -8,6 +15,14 @@ enum class VaultCategory {
     Files,
     Audio,
     Passwords
+}
+
+fun VaultCategory.icon(): ImageVector = when (this) {
+    VaultCategory.Photos -> Icons.Default.PhotoCamera
+    VaultCategory.Videos -> Icons.Default.VideoLibrary
+    VaultCategory.Files -> Icons.Default.Description
+    VaultCategory.Audio -> Icons.Default.AudioFile
+    VaultCategory.Passwords -> Icons.Default.Lock
 }
 
 data class VaultItem(

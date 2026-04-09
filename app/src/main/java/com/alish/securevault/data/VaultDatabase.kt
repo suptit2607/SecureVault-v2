@@ -48,7 +48,11 @@ interface PasswordDao {
     suspend fun deletePassword(id: String)
 }
 
-@Database(entities = [VaultItemEntity::class, PasswordEntryEntity::class], version = 1)
+@Database(
+    entities = [VaultItemEntity::class, PasswordEntryEntity::class],
+    version = 1,
+    exportSchema = false
+)
 abstract class VaultDatabase : RoomDatabase() {
     abstract fun vaultDao(): VaultDao
     abstract fun passwordDao(): PasswordDao
