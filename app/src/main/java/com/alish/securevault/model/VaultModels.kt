@@ -17,11 +17,11 @@ enum class VaultCategory {
     Passwords;
 
     fun icon(): ImageVector = when (this) {
-        Photos -> Icons.Default.PhotoCamera
+        Photos -> Icons.Default.PhotoLibrary
         Videos -> Icons.Default.VideoLibrary
-        Files -> Icons.Default.Description
+        Files -> Icons.Default.Inventory
         Audio -> Icons.Default.AudioFile
-        Passwords -> Icons.Default.Lock
+        Passwords -> Icons.Default.Key
     }
 }
 

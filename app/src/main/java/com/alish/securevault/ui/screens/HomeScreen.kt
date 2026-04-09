@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alish.securevault.model.RecentVaultItem
 import com.alish.securevault.model.VaultStat
-import com.alish.securevault.model.icon
 import com.alish.securevault.ui.SecureVaultUiState
 import com.alish.securevault.ui.theme.NeonCyan
 import com.alish.securevault.ui.theme.Sapphire700
@@ -179,7 +178,9 @@ private fun BentoQuickActions(
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(24.dp))
                 .background(
-                    Brush.linearGradient(listOf(NeonCyan.copy(alpha = 0.2f), Sapphire700))
+                    Brush.linearGradient(
+                        listOf(NeonCyan.copy(alpha = 0.3f), Sapphire700.copy(alpha = 0.8f))
+                    )
                 )
                 .clickable { onImportMedia() }
                 .padding(16.dp)
